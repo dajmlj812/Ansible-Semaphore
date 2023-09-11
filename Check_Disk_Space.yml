@@ -1,0 +1,18 @@
+---
+- name: check disk space
+  hosts: "{{ hosts }}"
+  tasks:
+    - name: get disk usage
+      command: df -h
+      register: disk_usage
+    - name: check disk space available
+      shell: df -h / | awk 'NR==2 {print $5}'
+      register: disk_usage
+    - name: Send ntfy update when disk space is over 80%
+      uri:
+        url: "ntfy.builditsmrt.com/alerts"
+        method: POST
+        body: '{"content": "Disk space on {{ inventory_hostname }} is above 80%!"}'
+        headers:
+          Priority: 1
+      when: disk_usage.stdout[:-1]|int > 80
